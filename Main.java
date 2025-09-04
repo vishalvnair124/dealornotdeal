@@ -239,7 +239,17 @@ class GameScreen {
     JPanel leftPanel = new JPanel(); // panel for top section
     JLabel centerTitle = new JLabel("Deal or Not Deal");
 
+    JPanel[] goldPanels = new JPanel[13];
+    JLabel[] goldJLabels = new JLabel[13];
+
+    JPanel[] silverPanels = new JPanel[13];
+    JLabel[] silverJLabels = new JLabel[13];
+
+    JPanel mainPanel = new JPanel();
+    JPanel msgJPanel = new JPanel();
+
     GameScreen() {
+        Box[] boxs = Box.initBox();
         // Frame settings
         mainFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         mainFrame.setSize(1500, 800);
@@ -253,19 +263,63 @@ class GameScreen {
         topPanel.setPreferredSize(new Dimension(topPanel.getPreferredSize().width, 50));
 
         // Right panel settings
-        rightPanel.add(new JLabel("Hello"));
+
         rightPanel.setPreferredSize(new Dimension(topPanel.getPreferredSize().width * 2, 750));
         rightPanel.setLayout(new FlowLayout(FlowLayout.CENTER));
+        rightPanel.setLayout(new GridLayout(13, 1));
         rightPanel.setBackground(new Color(255, 215, 0));
+
+        // in loop Money chart Displaying
+        for (int i = 0; i < 13; i++) {
+            goldJLabels[i] = new JLabel("" + GameValue.moneyArr[i + 13]);
+            goldPanels[i] = new JPanel(new GridBagLayout());
+            goldPanels[i].add(goldJLabels[i]);
+            goldPanels[i].setBorder(BorderFactory.createEtchedBorder());
+            for (int j = 0; j < 26; j++) {
+                if (boxs[j].boxMoney == GameValue.moneyArr[i]) {
+                    Color bgColor = (boxs[j].boxOpen)
+                            ? new Color(143, 121, 4) // Open color
+                            : new Color(255, 215, 0); // Not open color
+
+                    goldPanels[i].setBackground(bgColor);
+                }
+            }
+            rightPanel.add(goldPanels[i]);
+        }
+
         // Left panel settings
-        leftPanel.add(new JLabel("Hello"));
         leftPanel.setPreferredSize(new Dimension(topPanel.getPreferredSize().width * 2, 750));
         leftPanel.setLayout(new FlowLayout(FlowLayout.CENTER));
+        leftPanel.setLayout(new GridLayout(13, 1));
         leftPanel.setBackground(new Color(192, 192, 192));
+        // in loop Money chart Displaying
+        for (int i = 0; i < 13; i++) {
+
+            silverJLabels[i] = new JLabel("" + GameValue.moneyArr[i]);
+            silverPanels[i] = new JPanel(new GridBagLayout());
+            silverPanels[i].add(silverJLabels[i]);
+            silverPanels[i].setBorder(BorderFactory.createEtchedBorder());
+            for (int j = 0; j < 26; j++) {
+                if (boxs[j].boxMoney == GameValue.moneyArr[i]) {
+                    Color bgColor = (boxs[j].boxOpen)
+                            ? new Color(138, 128, 128) // Open color
+                            : new Color(192, 192, 192); // Not open color
+
+                    silverPanels[i].setBackground(bgColor);
+                }
+            }
+            leftPanel.add(silverPanels[i]);
+        }
+
+        // main panel
+        mainPanel.add(new JButton());
+
         // center panel settings
-        centerPanel.add(new JLabel("Hello"));
         centerPanel.setPreferredSize(new Dimension(topPanel.getPreferredSize().width * 6, 750));
         centerPanel.setLayout(new FlowLayout(FlowLayout.CENTER));
+
+        centerPanel.add(mainPanel);
+        centerPanel.add(msgJPanel);
 
         // Add panels to frame
         mainFrame.add(topPanel, BorderLayout.NORTH);
