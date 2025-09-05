@@ -247,6 +247,10 @@ class GameScreen {
 
     JPanel mainPanel = new JPanel();
     JPanel msgJPanel = new JPanel();
+    JPanel actionPanel = new JPanel();
+    JButton[] boxButton = new JButton[26];
+    JButton[] actButtons = new JButton[2];
+    JLabel msgJLabel = new JLabel();
 
     GameScreen() {
         Box[] boxs = Box.initBox();
@@ -311,15 +315,43 @@ class GameScreen {
             leftPanel.add(silverPanels[i]);
         }
 
+        GameValue.chosedBox = 3;
         // main panel
-        mainPanel.add(new JButton());
+        mainPanel.setLayout(new GridLayout(6, 5));
+        for (int j = 0; j < 26; j++) {
+            if (boxs[j].boxNum != GameValue.chosedBox) {
+                boxButton[j] = new JButton("" + (boxs[j].boxNum + 1));
+                boxButton[j].setPreferredSize(new Dimension(150, 75));
+                mainPanel.add(boxButton[j]);
+            }
+
+        }
+        // msg panel
+        if (true) {
+            msgJLabel.setText("Choose box");
+            msgJPanel.add(msgJLabel);
+        }
+        mainPanel.add(msgJPanel);
+
+        // action panel
+        actButtons[0] = new JButton("NO");
+        actButtons[1] = new JButton("YES");
+        actButtons[0].setPreferredSize(new Dimension(150, 50));
+        actButtons[1].setPreferredSize(new Dimension(150, 50));
+        actButtons[0].setBackground(new Color(252, 61, 61));
+        actButtons[1].setBackground(new Color(81, 245, 66));
+        actionPanel.add(actButtons[0]);
+        actionPanel.add(actButtons[1]);
 
         // center panel settings
         centerPanel.setPreferredSize(new Dimension(topPanel.getPreferredSize().width * 6, 750));
         centerPanel.setLayout(new FlowLayout(FlowLayout.CENTER));
+        centerPanel.setLayout(new BoxLayout(centerPanel, BoxLayout.Y_AXIS));
 
+        // Adding individual panel to Center
         centerPanel.add(mainPanel);
         centerPanel.add(msgJPanel);
+        centerPanel.add(actionPanel);
 
         // Add panels to frame
         mainFrame.add(topPanel, BorderLayout.NORTH);
