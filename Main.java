@@ -1,6 +1,8 @@
 import java.util.*;
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 
 //GameValue class 
 class GameValue {
@@ -21,10 +23,13 @@ class GameValue {
             Map.of(1, 7, 2, 5, 3, 4, 4, 3, 5, 2, 6, 1, 7, 1, 8, 1));
 
     // Initial choosedBox
-    static int chosedBox;
+    static int chosedBox = -1;
 
     static boolean offerAcepted = false;
     static int moneyGot = 0;
+
+    static boolean hasMsg = true;
+    static boolean hasAction = true;
 }
 
 // Box class to represent A Box
@@ -68,45 +73,22 @@ class Box {
     }
 
     // open a box
-    int openBox() {
-        this.boxOpen = true;
-
-        return this.boxMoney;
-    }
-
-    // method to select the oprning box
-    static void openingBox(Box[] boxs) {
-        boolean valid = false;
-        while (!valid) {
-            System.out.print("Which Box you want to open :");
-            int pos = GameValue.sc.nextInt();
-            if (pos > 0 && pos <= 26 && pos - 1 != GameValue.chosedBox && !boxs[pos - 1].boxOpen) {
-                valid = true;
-                System.out.println("In the box " + pos + ":" + boxs[pos - 1].openBox());
-            } else {
-                System.out.println("Invalid Box Number");
-
-            }
-        }
+    static void openBox(int pos, Box[] boxs) {
+        boxs[pos].boxOpen = true;
 
     }
 
     // Initial picking of my box
-    static void pickMyBox() {
-        boolean valid = false;
-        int pos = 0;
-        while (!valid) {
-            System.out.print("Which Box you want to Select :");
-            pos = GameValue.sc.nextInt();
-            if (pos > 0 && pos <= 26) {
-                valid = true;
+    static void pickMyBox(int pos) {
 
-            } else {
-                System.out.println("Invalid Box Number");
+        if (pos > 0 && pos <= 26) {
+            GameValue.chosedBox = pos - 1;
 
-            }
+        } else {
+            System.out.println("Invalid Box Number");
+
         }
-        GameValue.chosedBox = pos - 1;
+
     }
 
 }
@@ -212,13 +194,19 @@ class Game {
     // main game loop
     static void mainGameLoop() {
         Box[] boxs = Box.initBox();
+        GameScreen screen = new GameScreen();
+        screen.GameScreenUi(boxs);
 
         clearScreen();
-        Box.pickMyBox();
 
         for (int i = 0; i < GameValue.Level.size(); i++) {
+
             for (int j = 0; j < GameValue.Level.get(i + 1); j++) {
-                Box.openingBox(boxs);
+                // dispose old frame
+                screen.mainFrame.dispose();
+                // rebuild with updated state
+                screen = new GameScreen();
+                screen.GameScreenUi(boxs);
             }
             if (!GameValue.offerAcepted) {
                 Money.moneyChart(boxs);
@@ -228,6 +216,25 @@ class Game {
         }
         finalMsg(boxs[GameValue.chosedBox]);
 
+    }
+}
+
+class ButtonAction implements ActionListener {
+    int j;
+    Box[] boxs;
+
+    ButtonAction(int j, Box[] boxs) {
+        this.j = j;
+        this.boxs = boxs;
+    }
+
+    @Override
+    public void actionPerformed(ActionEvent e) {
+        if (GameValue.chosedBox == -1) {
+            GameValue.chosedBox = j;
+        } else {
+            Box.openBox(j, boxs);
+        }
     }
 }
 
@@ -252,8 +259,8 @@ class GameScreen {
     JButton[] actButtons = new JButton[2];
     JLabel msgJLabel = new JLabel();
 
-    GameScreen() {
-        Box[] boxs = Box.initBox();
+    void GameScreenUi(Box[] boxs) {
+
         // Frame settings
         mainFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         mainFrame.setSize(1500, 800);
@@ -279,15 +286,17 @@ class GameScreen {
             goldPanels[i] = new JPanel(new GridBagLayout());
             goldPanels[i].add(goldJLabels[i]);
             goldPanels[i].setBorder(BorderFactory.createEtchedBorder());
-            for (int j = 0; j < 26; j++) {
-                if (boxs[j].boxMoney == GameValue.moneyArr[i]) {
-                    Color bgColor = (boxs[j].boxOpen)
-                            ? new Color(143, 121, 4) // Open color
-                            : new Color(255, 215, 0); // Not open color
 
-                    goldPanels[i].setBackground(bgColor);
+            boolean isOpened = false;
+            for (int j = 0; j < 26; j++) {
+                if (boxs[j].boxMoney == GameValue.moneyArr[i + 13] && boxs[j].boxOpen) {
+                    isOpened = true;
+                    break;
                 }
             }
+            Color bgColor = isOpened ? new Color(143, 121, 4) : new Color(255, 215, 0);
+            goldPanels[i].setBackground(bgColor);
+
             rightPanel.add(goldPanels[i]);
         }
 
@@ -296,40 +305,53 @@ class GameScreen {
         leftPanel.setLayout(new FlowLayout(FlowLayout.CENTER));
         leftPanel.setLayout(new GridLayout(13, 1));
         leftPanel.setBackground(new Color(192, 192, 192));
+
         // in loop Money chart Displaying
         for (int i = 0; i < 13; i++) {
-
             silverJLabels[i] = new JLabel("" + GameValue.moneyArr[i]);
             silverPanels[i] = new JPanel(new GridBagLayout());
             silverPanels[i].add(silverJLabels[i]);
             silverPanels[i].setBorder(BorderFactory.createEtchedBorder());
-            for (int j = 0; j < 26; j++) {
-                if (boxs[j].boxMoney == GameValue.moneyArr[i]) {
-                    Color bgColor = (boxs[j].boxOpen)
-                            ? new Color(138, 128, 128) // Open color
-                            : new Color(192, 192, 192); // Not open color
 
-                    silverPanels[i].setBackground(bgColor);
+            // Check if any box with this money is opened
+            boolean isOpened = false;
+            for (int j = 0; j < 26; j++) {
+                if (boxs[j].boxMoney == GameValue.moneyArr[i] && boxs[j].boxOpen) {
+                    isOpened = true;
+                    break;
                 }
             }
+
+            Color bgColor = isOpened ? new Color(138, 128, 128) : new Color(192, 192, 192);
+            silverPanels[i].setBackground(bgColor);
+
             leftPanel.add(silverPanels[i]);
         }
 
-        GameValue.chosedBox = 3;
         // main panel
         mainPanel.setLayout(new GridLayout(6, 5));
         for (int j = 0; j < 26; j++) {
             if (boxs[j].boxNum != GameValue.chosedBox) {
-                boxButton[j] = new JButton("" + (boxs[j].boxNum + 1));
+                boxButton[j] = new JButton("" + ((boxs[j].boxOpen) ? boxs[j].boxMoney : boxs[j].boxNum + 1));
                 boxButton[j].setPreferredSize(new Dimension(150, 75));
+                Color bgColor = (boxs[j].boxOpen)
+                        ? new Color(140, 140, 140) // Open color
+                        : new Color(237, 237, 237); // Not open color
+                boxButton[j].setBackground(bgColor);
+                boxButton[j].addActionListener(new ButtonAction(j, boxs));
                 mainPanel.add(boxButton[j]);
             }
 
         }
         // msg panel
         if (true) {
-            msgJLabel.setText("Choose box");
+            if (GameValue.chosedBox == -1) {
+                msgJLabel.setText("Choose box");
+
+            }
+
             msgJPanel.add(msgJLabel);
+
         }
         mainPanel.add(msgJPanel);
 
@@ -349,9 +371,17 @@ class GameScreen {
         centerPanel.setLayout(new BoxLayout(centerPanel, BoxLayout.Y_AXIS));
 
         // Adding individual panel to Center
+        centerPanel.removeAll();
         centerPanel.add(mainPanel);
-        centerPanel.add(msgJPanel);
-        centerPanel.add(actionPanel);
+        if (GameValue.hasMsg) {
+            centerPanel.add(msgJPanel);
+        }
+        if (GameValue.hasAction) {
+            centerPanel.add(actionPanel);
+        }
+
+        centerPanel.revalidate();
+        centerPanel.repaint();
 
         // Add panels to frame
         mainFrame.add(topPanel, BorderLayout.NORTH);
@@ -360,7 +390,9 @@ class GameScreen {
         mainFrame.add(leftPanel, BorderLayout.WEST);
         // Show frame
         mainFrame.setVisible(true);
+
     }
+
 }
 
 // class Main
@@ -369,6 +401,6 @@ class Main {
     // main method
     public static void main(String[] args) {
 
-        new GameScreen();
+        Game.mainGameLoop();
     }
 }
