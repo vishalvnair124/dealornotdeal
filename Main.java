@@ -26,10 +26,17 @@ class GameValue {
     static int chosedBox = -1;
 
     static boolean offerAcepted = false;
+
     static int moneyGot = 0;
+    static int offerMoney = 0;
 
     static boolean hasMsg = true;
-    static boolean hasAction = true;
+    static boolean hasAction = false;
+
+    static int mainI = 0;
+    static int mainJ = 0;
+
+    static String msg = "pick your box";
 }
 
 // Box class to represent A Box
@@ -116,12 +123,9 @@ class Banker {
     // Are you ready for deal
     static void readyForDeal(int offerMoney) {
 
-        System.out.println("Banker gives you an offer : " + offerMoney);
-        System.out.println("If yes '1' or No '0'");
-        if (GameValue.sc.nextInt() == 1) {
-            GameValue.offerAcepted = true;
-            GameValue.moneyGot = offerMoney;
-        }
+        GameValue.hasAction = true;
+        GameValue.offerMoney = offerMoney;
+        GameValue.msg = "New Offer " + offerMoney;
 
     }
 
@@ -195,47 +199,86 @@ class Game {
     static void mainGameLoop() {
         Box[] boxs = Box.initBox();
         GameScreen screen = new GameScreen();
-        screen.GameScreenUi(boxs);
+        screen.GameScreenUi(boxs, screen);
 
         clearScreen();
-
-        for (int i = 0; i < GameValue.Level.size(); i++) {
-
-            for (int j = 0; j < GameValue.Level.get(i + 1); j++) {
-                // dispose old frame
-                screen.mainFrame.dispose();
-                // rebuild with updated state
-                screen = new GameScreen();
-                screen.GameScreenUi(boxs);
-            }
-            if (!GameValue.offerAcepted) {
-                Money.moneyChart(boxs);
-                Banker.readyForDeal(Banker.offerMoney(boxs, i + 1));
-            }
-
-        }
-        finalMsg(boxs[GameValue.chosedBox]);
 
     }
 }
 
-class ButtonAction implements ActionListener {
-    int j;
+class actButtonsActions implements ActionListener {
+    boolean input;
     Box[] boxs;
+    GameScreen screen;
 
-    ButtonAction(int j, Box[] boxs) {
-        this.j = j;
+    actButtonsActions(boolean input, Box[] boxs, GameScreen screen) {
+        this.input = input;
         this.boxs = boxs;
+        this.screen = screen;
     }
 
     @Override
     public void actionPerformed(ActionEvent e) {
-        if (GameValue.chosedBox == -1) {
-            GameValue.chosedBox = j;
+        if (input == true) {
+            GameValue.offerAcepted = true;
+            GameValue.moneyGot = GameValue.offerMoney;
+            GameValue.msg = "You win" + GameValue.moneyGot;
         } else {
-            Box.openBox(j, boxs);
+            GameValue.offerAcepted = false;
+            GameValue.msg = "pick your box";
+        }
+        GameValue.hasAction = false;
+
+        screen.mainFrame.dispose();
+        screen = new GameScreen();
+        screen.GameScreenUi(boxs, screen);
+    }
+
+}
+
+class BoxButtonAction implements ActionListener {
+    int j;
+    Box[] boxs;
+    GameScreen screen;
+
+    BoxButtonAction(int j, Box[] boxs, GameScreen screen) {
+        this.j = j;
+        this.boxs = boxs;
+        this.screen = screen;
+    }
+
+    @Override
+    public void actionPerformed(ActionEvent e) {
+        if (boxs[j].boxOpen != true) {
+            if (GameValue.chosedBox == -1) {
+                GameValue.chosedBox = j;
+            } else {
+                Box.openBox(j, boxs);
+                GameValue.mainJ++; // advance the game
+            }
+
+            // check if level is complete
+            if (GameValue.mainJ >= GameValue.Level.get(GameValue.mainI + 1)) {
+                if (!GameValue.offerAcepted) {
+                    // rebuild UI
+                    screen.mainFrame.dispose();
+                    screen = new GameScreen();
+                    screen.GameScreenUi(boxs, screen);
+                    GameValue.hasAction = true;
+                    Banker.readyForDeal(Banker.offerMoney(boxs, GameValue.mainI + 1));
+
+                }
+                GameValue.mainI++; // move to next level
+                GameValue.mainJ = 0; // reset for next level
+            }
+
+            // rebuild UI
+            screen.mainFrame.dispose();
+            screen = new GameScreen();
+            screen.GameScreenUi(boxs, screen);
         }
     }
+
 }
 
 class GameScreen {
@@ -259,7 +302,7 @@ class GameScreen {
     JButton[] actButtons = new JButton[2];
     JLabel msgJLabel = new JLabel();
 
-    void GameScreenUi(Box[] boxs) {
+    void GameScreenUi(Box[] boxs, GameScreen screen) {
 
         // Frame settings
         mainFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -338,22 +381,14 @@ class GameScreen {
                         ? new Color(140, 140, 140) // Open color
                         : new Color(237, 237, 237); // Not open color
                 boxButton[j].setBackground(bgColor);
-                boxButton[j].addActionListener(new ButtonAction(j, boxs));
+                if (!GameValue.hasAction) {
+                    boxButton[j].addActionListener(new BoxButtonAction(j, boxs, screen));
+                }
+
                 mainPanel.add(boxButton[j]);
             }
 
         }
-        // msg panel
-        if (true) {
-            if (GameValue.chosedBox == -1) {
-                msgJLabel.setText("Choose box");
-
-            }
-
-            msgJPanel.add(msgJLabel);
-
-        }
-        mainPanel.add(msgJPanel);
 
         // action panel
         actButtons[0] = new JButton("NO");
@@ -362,6 +397,8 @@ class GameScreen {
         actButtons[1].setPreferredSize(new Dimension(150, 50));
         actButtons[0].setBackground(new Color(252, 61, 61));
         actButtons[1].setBackground(new Color(81, 245, 66));
+        actButtons[0].addActionListener(new actButtonsActions(false, boxs, screen));
+        actButtons[1].addActionListener(new actButtonsActions(true, boxs, screen));
         actionPanel.add(actButtons[0]);
         actionPanel.add(actButtons[1]);
 
@@ -369,19 +406,18 @@ class GameScreen {
         centerPanel.setPreferredSize(new Dimension(topPanel.getPreferredSize().width * 6, 750));
         centerPanel.setLayout(new FlowLayout(FlowLayout.CENTER));
         centerPanel.setLayout(new BoxLayout(centerPanel, BoxLayout.Y_AXIS));
-
-        // Adding individual panel to Center
-        centerPanel.removeAll();
+        mainPanel.setBackground(new Color(209, 207, 207));
         centerPanel.add(mainPanel);
         if (GameValue.hasMsg) {
+            msgJLabel = new JLabel(GameValue.msg);
+            msgJPanel.add(msgJLabel);
+            msgJPanel.setBackground(new Color(5, 28, 207));
             centerPanel.add(msgJPanel);
         }
         if (GameValue.hasAction) {
             centerPanel.add(actionPanel);
+            actionPanel.setBackground(new Color(5, 249, 6));
         }
-
-        centerPanel.revalidate();
-        centerPanel.repaint();
 
         // Add panels to frame
         mainFrame.add(topPanel, BorderLayout.NORTH);
